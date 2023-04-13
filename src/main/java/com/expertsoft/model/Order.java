@@ -2,7 +2,8 @@ package com.expertsoft.model;
 
 import java.util.List;
 
-public class Order {
+public class
+Order {
 
     public Order() {}
 

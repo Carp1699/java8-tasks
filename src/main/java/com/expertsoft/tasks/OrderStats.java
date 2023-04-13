@@ -3,10 +3,11 @@ package com.expertsoft.tasks;
 import com.expertsoft.model.*;
 import com.expertsoft.util.AveragingBigDecimalCollector;
 
+
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -17,6 +18,10 @@ import java.util.stream.Stream;
  * Refer to the <code>com.expertsoft.model</code> package to observe the domain model of the shop.
  */
 class OrderStats {
+    static int mauskeherramienta=0;
+    static void counterUnU (int quantity){
+        mauskeherramienta+= quantity;
+    }
 
     /**
      * Task 1 (⚫⚫⚪⚪⚪)
@@ -28,7 +33,9 @@ class OrderStats {
      * @return list, containing orders paid with provided card type
      */
     static List<Order> ordersForCardType(final Stream<Customer> customers, PaymentInfo.CardType cardType) {
-        return null;
+       return customers.map(Customer::getOrders)
+               .flatMap(orders -> orders.stream().filter(order -> order.getPaymentInfo().getCardType().equals(cardType)))
+               .collect(Collectors.toList());
     }
 
     /**
@@ -41,7 +48,12 @@ class OrderStats {
      * @return map, where order size values mapped to lists of orders
      */
     static Map<Integer, List<Order>> orderSizes(final Stream<Order> orders) {
-        return null;
+        return orders
+                        .collect(Collectors.groupingBy(order ->order.getOrderItems()
+                        .stream()
+                        .map(OrderItem::getQuantity)
+                                        .reduce(0,Integer::sum)
+                        ));
     }
 
     /**
@@ -55,7 +67,18 @@ class OrderStats {
      * @return boolean, representing if every order in the stream contains product of specified color
      */
     static Boolean hasColorProduct(final Stream<Order> orders, final Product.Color color) {
-        return null;
+
+
+        return orders.
+                allMatch(order -> order.getOrderItems().stream()
+                        .anyMatch(orderItem -> orderItem.getProduct().getColor().equals(color)));
+//                .flatMap(Collection::stream)
+//                .anyMatch(orderItem -> orderItem.getProduct().getColor().equals(color));
+//                 .flatMap(Collection::stream)
+//                 .map(OrderItem::getProduct)
+//                 .allMatch(product -> product.getColor() == color);
+
+
     }
 
     /**
@@ -67,7 +90,14 @@ class OrderStats {
      * @return map, where for each customer email there is a long referencing a number of different credit cards this customer uses.
      */
     static Map<String, Long> cardsCountForCustomer(final Stream<Customer> customers) {
-        return null;
+        return
+        customers.collect(Collectors.toMap(Customer::getEmail, customer -> customer.getOrders().stream()
+                .map(order -> order
+                        .getPaymentInfo()
+                        .getCardNumber())
+                        .distinct()
+                        .count()));
+
     }
 
     /**
@@ -91,7 +121,30 @@ class OrderStats {
      * @return java.util.Optional containing the name of the most popular country
      */
     static Optional<String> mostPopularCountry(final Stream<Customer> customers) {
-        return null;
+        return customers.collect(Collectors.groupingBy(customer -> customer.getAddress().getCountry(),
+                Collectors.mapping(c-> c.getAddress().getCountry(),Collectors.counting()))).entrySet()
+                .stream().max(Comparator.comparing(Map.Entry::getValue)).map(Map.Entry::getKey);
+
+//        String maxFreq = "";
+//        int max_count=0;
+//
+//
+//       List<String> uwu = customers
+//              .map(customer -> customer.getAddress().getCountry())
+//               .collect(Collectors.toList());
+//        for (int i = 0; i < uwu.size(); i++) {
+//            int count = 0;
+//            for (int j = 0; j < uwu.size(); j++) {
+//                if (uwu.get(i).equals(uwu.get(j)))count ++;
+//            }
+//            if (count>max_count){
+//                max_count= count;
+//                maxFreq = uwu.get(i);
+//            }
+//        }
+//        if (maxFreq.isEmpty())return Optional.empty();
+//       else return Optional.of(maxFreq);
+
     }
 
     /**
@@ -115,6 +168,25 @@ class OrderStats {
      */
     static BigDecimal averageProductPriceForCreditCard(final Stream<Customer> customers, final String cardNumber) {
         final AveragingBigDecimalCollector collector = new AveragingBigDecimalCollector();
-        return null;
+        BigDecimal uwu =
+        customers.map(customer -> customer.getOrders().stream())
+                .flatMap(orderStream -> orderStream.filter(order -> order.getPaymentInfo().getCardNumber().equals(cardNumber)))
+                .map(Order::getOrderItems)
+                .flatMap(orderItems -> orderItems.stream()
+                        .map(orderItem ->{counterUnU(orderItem.getQuantity());
+                        return orderItem.getProduct().getPrice().multiply(new BigDecimal(orderItem.getQuantity()));}))
+            .reduce(BigDecimal.ZERO,BigDecimal::add);
+        try {
+         return  uwu.divide(new BigDecimal(OrderStats.mauskeherramienta),2,RoundingMode.CEILING);
+
+        }catch (ArithmeticException e){
+            return new BigDecimal(0);
+        }finally {
+            OrderStats.mauskeherramienta=0;
+        }
+
+
+
+//        return uwu.stream().reduce(BigDecimal.ZERO, BigDecimal::add).divide(new BigDecimal(uwu.size()),2,RoundingMode.CEILING);
     }
 }
